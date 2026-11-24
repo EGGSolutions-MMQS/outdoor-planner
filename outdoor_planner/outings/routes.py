@@ -14,6 +14,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from wtforms.fields import SelectChoice
 
 from ..extensions import db
 from ..models import ROLE_PARTICIPANT, Comment, Outing, Signup
@@ -63,7 +64,9 @@ def get_own_outing_or_403(outing_id):
 
 def _set_choices(form):
     results = session.get(GEO_SESSION_KEY, [])
-    form.location_choice.choices = [(str(i), r["label"]) for i, r in enumerate(results)]
+    form.location_choice.choices = [
+        SelectChoice(str(i), r["label"]) for i, r in enumerate(results)
+    ]
     return results
 
 
