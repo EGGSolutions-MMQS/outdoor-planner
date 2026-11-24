@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ outing.title }} · Outdoor Planner{% endblock %}
+{% block content %}
+<h1>{{ outing.title }}</h1>
+<p class="meta">
+  {{ outing.location_name }} · {{ outing.starts_at.strftime('%d/%m/%Y %H:%M') }}
+  · Organizzatore: {{ outing.organizer.username }}
+</p>
+{% if outing.is_past %}<p><mark>Uscita già svolta.</mark></p>{% endif %}
+<p class="description">{{ outing.description }}</p>
+<p>Posti: {{ outing.signups|length }} / {{ outing.max_seats }}</p>
+
+{% if current_user.is_authenticated and current_user.id == outing.organizer_id %}
+  <p>
+    <a href="{{ url_for('outings.edit', outing_id=outing.id) }}" role="button" class="secondary">Modifica</a>
+    <form method="post" action="{{ url_for('outings.delete', outing_id=outing.id) }}" class="inline"
+          onsubmit="return confirm('Cancellare questa uscita?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="contrast">Cancella</button>
+    </form>
+  </p>
+{% endif %}
+{% endblock %}

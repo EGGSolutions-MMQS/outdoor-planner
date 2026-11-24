@@ -23,9 +23,11 @@ def create_app(config=None):
 
     from .auth.routes import bp as auth_bp
     from .main.routes import bp as main_bp
+    from .outings.routes import bp as outings_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(outings_bp)
 
     with app.app_context():
         from . import models

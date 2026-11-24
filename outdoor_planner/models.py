@@ -59,7 +59,7 @@ class Outing(db.Model):
 
     @property
     def is_past(self):
-        return self.starts_at < utcnow()
+        return self.starts_at < datetime.now()
 
 
 class Signup(db.Model):
