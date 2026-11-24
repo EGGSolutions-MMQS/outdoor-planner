@@ -10,6 +10,33 @@
 <p class="description">{{ outing.description }}</p>
 <p>Posti: {{ outing.signups|length }} / {{ outing.max_seats }}</p>
 
+{% if current_user.is_authenticated and current_user.role == 'participant' and not outing.is_past %}
+  {% if signed_up %}
+    <form method="post" action="{{ url_for('outings.unsubscribe', outing_id=outing.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="secondary">Cancella iscrizione</button>
+    </form>
+  {% elif outing.seats_left > 0 %}
+    <form method="post" action="{{ url_for('outings.signup', outing_id=outing.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">Iscriviti</button>
+    </form>
+  {% else %}
+    <p><mark>Posti esauriti.</mark></p>
+  {% endif %}
+{% endif %}
+
+{% if current_user.is_authenticated and current_user.id == outing.organizer_id %}
+<section>
+  <h2>Iscritti ({{ outing.signups|length }})</h2>
+  {% if outing.signups %}
+    <ul>{% for s in outing.signups %}<li>{{ s.user.username }}</li>{% endfor %}</ul>
+  {% else %}
+    <p>Nessun iscritto.</p>
+  {% endif %}
+</section>
+{% endif %}
+
 {% if outing.gpx_filename %}
 <section>
   <h2>Traccia GPX</h2>

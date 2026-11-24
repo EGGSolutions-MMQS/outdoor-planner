@@ -16,7 +16,7 @@ from flask import (
 from flask_login import current_user, login_required
 
 from ..extensions import db
-from ..models import Outing
+from ..models import ROLE_PARTICIPANT, Outing, Signup
 from ..services import geocoding, gpx
 from ..services import weather as weather_service
 from .forms import OutingForm
@@ -35,6 +35,23 @@ def organizer_required(view):
         return view(*args, **kwargs)
 
     return wrapper
+
+
+def participant_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if current_user.role != ROLE_PARTICIPANT:
+            abort(403)
+        return view(*args, **kwargs)
+
+    return wrapper
+
+
+def _find_signup(outing_id):
+    return db.session.execute(
+        db.select(Signup).filter_by(outing_id=outing_id, user_id=current_user.id)
+    ).scalar_one_or_none()
 
 
 def get_own_outing_or_403(outing_id):
@@ -170,7 +187,10 @@ def create():
 def detail(outing_id):
     outing = db.get_or_404(Outing, outing_id)
     weather = weather_service.get_daily_forecast(outing.latitude, outing.longitude, outing.starts_at)
-    return render_template("outings/detail.html", outing=outing, weather=weather)
+    signed_up = current_user.is_authenticated and _find_signup(outing.id) is not None
+    return render_template(
+        "outings/detail.html", outing=outing, weather=weather, signed_up=signed_up
+    )
 
 
 @bp.route("/<int:outing_id>/edit", methods=["GET", "POST"])
@@ -188,6 +208,37 @@ def delete(outing_id):
     db.session.commit()
     flash("Uscita cancellata.", "success")
     return redirect(url_for("main.index"))
+
+
+@bp.route("/<int:outing_id>/signup", methods=["POST"])
+@participant_required
+def signup(outing_id):
+    outing = db.get_or_404(Outing, outing_id)
+    if outing.is_past:
+        flash("L'uscita è già stata svolta.", "error")
+    elif _find_signup(outing.id) is not None:
+        flash("Sei già iscritto a questa uscita.", "error")
+    elif outing.seats_left <= 0:
+        flash("Posti esauriti.", "error")
+    else:
+        db.session.add(Signup(outing_id=outing.id, user_id=current_user.id))
+        db.session.commit()
+        flash("Iscrizione completata.", "success")
+    return redirect(url_for("outings.detail", outing_id=outing.id))
+
+
+@bp.route("/<int:outing_id>/unsubscribe", methods=["POST"])
+@participant_required
+def unsubscribe(outing_id):
+    outing = db.get_or_404(Outing, outing_id)
+    existing = _find_signup(outing.id)
+    if existing is None:
+        flash("Non sei iscritto a questa uscita.", "error")
+    else:
+        db.session.delete(existing)
+        db.session.commit()
+        flash("Iscrizione cancellata.", "success")
+    return redirect(url_for("outings.detail", outing_id=outing.id))
 
 
 @bp.route("/<int:outing_id>/gpx")
