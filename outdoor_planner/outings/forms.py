@@ -30,3 +30,8 @@ class OutingForm(FlaskForm):
     )
     remove_gpx = BooleanField("Rimuovi la traccia attuale")
     save = SubmitField("Salva")
+
+
+class CommentForm(FlaskForm):
+    body = TextAreaField("Commento", validators=[DataRequired(), Length(max=1000)])
+    submit = SubmitField("Pubblica")

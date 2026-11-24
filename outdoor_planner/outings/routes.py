@@ -16,10 +16,10 @@ from flask import (
 from flask_login import current_user, login_required
 
 from ..extensions import db
-from ..models import ROLE_PARTICIPANT, Outing, Signup
+from ..models import ROLE_PARTICIPANT, Comment, Outing, Signup
 from ..services import geocoding, gpx
 from ..services import weather as weather_service
-from .forms import OutingForm
+from .forms import CommentForm, OutingForm
 
 bp = Blueprint("outings", __name__, url_prefix="/outings")
 
@@ -189,7 +189,11 @@ def detail(outing_id):
     weather = weather_service.get_daily_forecast(outing.latitude, outing.longitude, outing.starts_at)
     signed_up = current_user.is_authenticated and _find_signup(outing.id) is not None
     return render_template(
-        "outings/detail.html", outing=outing, weather=weather, signed_up=signed_up
+        "outings/detail.html",
+        outing=outing,
+        weather=weather,
+        signed_up=signed_up,
+        comment_form=CommentForm(),
     )
 
 
@@ -239,6 +243,37 @@ def unsubscribe(outing_id):
         db.session.commit()
         flash("Iscrizione cancellata.", "success")
     return redirect(url_for("outings.detail", outing_id=outing.id))
+
+
+@bp.route("/<int:outing_id>/comments", methods=["POST"])
+@login_required
+def add_comment(outing_id):
+    outing = db.get_or_404(Outing, outing_id)
+    form = CommentForm()
+    if outing.is_past:
+        flash("L'uscita è già stata svolta: commenti chiusi.", "error")
+    elif form.validate_on_submit():
+        db.session.add(
+            Comment(outing_id=outing.id, author_id=current_user.id, body=form.body.data.strip())
+        )
+        db.session.commit()
+        flash("Commento pubblicato.", "success")
+    else:
+        flash("Il commento è vuoto o troppo lungo (max 1000 caratteri).", "error")
+    return redirect(url_for("outings.detail", outing_id=outing.id))
+
+
+@bp.route("/comments/<int:comment_id>/delete", methods=["POST"])
+@login_required
+def delete_comment(comment_id):
+    comment = db.get_or_404(Comment, comment_id)
+    if comment.author_id != current_user.id:
+        abort(403)
+    outing_id = comment.outing_id
+    db.session.delete(comment)
+    db.session.commit()
+    flash("Commento cancellato.", "success")
+    return redirect(url_for("outings.detail", outing_id=outing_id))
 
 
 @bp.route("/<int:outing_id>/gpx")
