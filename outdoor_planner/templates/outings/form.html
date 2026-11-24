@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifica' if outing else 'Nuova' }} uscita · Outdoor Planner{% endblock %}
+{% block content %}
+<h1>{{ 'Modifica uscita' if outing else 'Nuova uscita' }}</h1>
+<form method="post" enctype="multipart/form-data" novalidate>
+  {{ form.hidden_tag() }}
+  <label>{{ form.title.label.text }} {{ form.title() }}</label>
+  {% for error in form.title.errors %}<small class="error">{{ error }}</small>{% endfor %}
+
+  <label>{{ form.description.label.text }} {{ form.description(rows=5) }}</label>
+  {% for error in form.description.errors %}<small class="error">{{ error }}</small>{% endfor %}
+
+  <label>{{ form.location_query.label.text }} {{ form.location_query() }}</label>
+  <button type="submit" name="search" value="1" class="secondary" formnovalidate>Cerca luogo</button>
+  {% if form.location_choice.choices %}
+    <label>{{ form.location_choice.label.text }} {{ form.location_choice() }}</label>
+  {% elif outing %}
+    <small class="meta">Luogo attuale: {{ outing.location_name }}. Cerca un nuovo luogo solo per cambiarlo.</small>
+  {% endif %}
+
+  <label>{{ form.starts_at.label.text }} {{ form.starts_at() }}</label>
+  {% for error in form.starts_at.errors %}<small class="error">{{ error }}</small>{% endfor %}
+
+  <label>{{ form.max_seats.label.text }} {{ form.max_seats(min=1, max=500) }}</label>
+  {% for error in form.max_seats.errors %}<small class="error">{{ error }}</small>{% endfor %}
+
+  <label>{{ form.gpx.label.text }} {{ form.gpx(accept=".gpx") }}</label>
+  {% for error in form.gpx.errors %}<small class="error">{{ error }}</small>{% endfor %}
+  {% if outing and outing.gpx_filename %}
+    <label>{{ form.remove_gpx() }} {{ form.remove_gpx.label.text }} ({{ outing.gpx_original_name }})</label>
+  {% endif %}
+
+  <button type="submit" name="save" value="1">Salva</button>
+</form>
+{% endblock %}

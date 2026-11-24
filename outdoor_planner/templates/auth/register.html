@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Registrazione · Outdoor Planner{% endblock %}
+{% block content %}
+<h1>Registrazione</h1>
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+  {% for field in [form.username, form.password, form.role] %}
+    <label>{{ field.label.text }} {{ field() }}</label>
+    {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+  {% endfor %}
+  <button type="submit">Registrati</button>
+</form>
+{% endblock %}

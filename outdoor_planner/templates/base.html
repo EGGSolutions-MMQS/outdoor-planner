@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Outdoor Planner{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="{{ url_for('main.index') }}"><strong>Outdoor Planner</strong></a></li></ul>
+      <ul>
+        {% if current_user.is_authenticated %}
+          {% if current_user.role == 'organizer' %}
+            <li><a href="{{ url_for('outings.create') }}">Nuova uscita</a></li>
+          {% endif %}
+          <li>{{ current_user.username }} ({{ current_user.role }})</li>
+          <li>
+            <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="secondary outline">Esci</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a href="{{ url_for('auth.login') }}">Accedi</a></li>
+          <li><a href="{{ url_for('auth.register') }}">Registrati</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <article class="flash {{ category }}">{{ message }}</article>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="container">
+    <small>Dati meteo: <a href="https://open-meteo.com/">Open-Meteo.com</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</small>
+  </footer>
+</body>
+</html>

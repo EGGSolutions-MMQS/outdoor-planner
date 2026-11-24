@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ outing.title }} · Outdoor Planner{% endblock %}
+{% block content %}
+<h1>{{ outing.title }}</h1>
+<p class="meta">
+  {{ outing.location_name }} · {{ outing.starts_at.strftime('%d/%m/%Y %H:%M') }}
+  · Organizzatore: {{ outing.organizer.username }}
+</p>
+{% if outing.is_past %}<p><mark>Uscita già svolta.</mark></p>{% endif %}
+<p class="description">{{ outing.description }}</p>
+<p>Posti: {{ outing.signups|length }} / {{ outing.max_seats }}</p>
+
+{% if current_user.is_authenticated and current_user.role == 'participant' and not outing.is_past %}
+  {% if signed_up %}
+    <form method="post" action="{{ url_for('outings.unsubscribe', outing_id=outing.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="secondary">Cancella iscrizione</button>
+    </form>
+  {% elif outing.seats_left > 0 %}
+    <form method="post" action="{{ url_for('outings.signup', outing_id=outing.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">Iscriviti</button>
+    </form>
+  {% else %}
+    <p><mark>Posti esauriti.</mark></p>
+  {% endif %}
+{% endif %}
+
+{% if current_user.is_authenticated and current_user.id == outing.organizer_id %}
+<section>
+  <h2>Iscritti ({{ outing.signups|length }})</h2>
+  {% if outing.signups %}
+    <ul>{% for s in outing.signups %}<li>{{ s.user.username }}</li>{% endfor %}</ul>
+  {% else %}
+    <p>Nessun iscritto.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if outing.gpx_filename %}
+<section>
+  <h2>Traccia GPX</h2>
+  <p>Distanza: {{ '%.2f'|format(outing.gpx_distance_km) }} km · Punti: {{ outing.gpx_points }}
+    · <a href="{{ url_for('outings.download_gpx', outing_id=outing.id) }}">Scarica traccia</a></p>
+</section>
+{% endif %}
+
+<section>
+  <h2>Previsioni meteo</h2>
+  {% if weather.status == 'ok' %}
+    <ul>
+      <li>Temperatura: {{ weather.data.temp_min }}° / {{ weather.data.temp_max }}° C</li>
+      <li>Probabilità di pioggia: {{ weather.data.rain_probability }}%</li>
+      <li>Vento massimo: {{ weather.data.wind_max }} km/h</li>
+    </ul>
+  {% elif weather.status == 'too_far' %}
+    <p>Previsioni non ancora disponibili.</p>
+  {% elif weather.status == 'past' %}
+    <p>Previsioni non disponibili per date passate.</p>
+  {% else %}
+    <p>Meteo non disponibile al momento.</p>
+  {% endif %}
+</section>
+
+{% if current_user.is_authenticated and current_user.id == outing.organizer_id %}
+  <p>
+    <a href="{{ url_for('outings.edit', outing_id=outing.id) }}" role="button" class="secondary">Modifica</a>
+    <form method="post" action="{{ url_for('outings.delete', outing_id=outing.id) }}" class="inline"
+          onsubmit="return confirm('Cancellare questa uscita?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="contrast">Cancella</button>
+    </form>
+  </p>
+{% endif %}
+
+<section>
+  <h2>Commenti ({{ outing.comments|length }})</h2>
+  {% for comment in outing.comments %}
+    <article>
+      <p class="description">{{ comment.body }}</p>
+      <footer class="meta">
+        {{ comment.author.username }} · {{ comment.created_at.strftime('%d/%m/%Y %H:%M') }}
+        {% if current_user.is_authenticated and current_user.id == comment.author_id %}
+          <form method="post" action="{{ url_for('outings.delete_comment', comment_id=comment.id) }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="secondary outline">Cancella</button>
+          </form>
+        {% endif %}
+      </footer>
+    </article>
+  {% else %}
+    <p>Nessun commento.</p>
+  {% endfor %}
+
+  {% if current_user.is_authenticated and not outing.is_past %}
+    <form method="post" action="{{ url_for('outings.add_comment', outing_id=outing.id) }}">
+      {{ comment_form.hidden_tag() }}
+      <label>{{ comment_form.body.label.text }} {{ comment_form.body(rows=3, maxlength=1000) }}</label>
+      <button type="submit">Pubblica</button>
+    </form>
+  {% elif not current_user.is_authenticated %}
+    <p><a href="{{ url_for('auth.login') }}">Accedi</a> per commentare.</p>
+  {% endif %}
+</section>
+{% endblock %}

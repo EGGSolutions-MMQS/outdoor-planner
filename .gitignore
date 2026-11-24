@@ -221,3 +221,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Outdoor Planner
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+uploads-test/
+.claude/settings.local.json
