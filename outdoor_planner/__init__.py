@@ -21,4 +21,15 @@ def create_app(config=None):
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Accedi per continuare."
 
+    from .auth.routes import bp as auth_bp
+    from .main.routes import bp as main_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+
+    with app.app_context():
+        from . import models
+
+        db.create_all()
+
     return app
