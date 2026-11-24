@@ -16,6 +16,7 @@ from flask_login import current_user, login_required
 from ..extensions import db
 from ..models import Outing
 from ..services import geocoding
+from ..services import weather as weather_service
 from .forms import OutingForm
 
 bp = Blueprint("outings", __name__, url_prefix="/outings")
@@ -132,7 +133,8 @@ def create():
 @bp.route("/<int:outing_id>")
 def detail(outing_id):
     outing = db.get_or_404(Outing, outing_id)
-    return render_template("outings/detail.html", outing=outing)
+    weather = weather_service.get_daily_forecast(outing.latitude, outing.longitude, outing.starts_at)
+    return render_template("outings/detail.html", outing=outing, weather=weather)
 
 
 @bp.route("/<int:outing_id>/edit", methods=["GET", "POST"])

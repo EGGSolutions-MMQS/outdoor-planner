@@ -10,6 +10,23 @@
 <p class="description">{{ outing.description }}</p>
 <p>Posti: {{ outing.signups|length }} / {{ outing.max_seats }}</p>
 
+<section>
+  <h2>Previsioni meteo</h2>
+  {% if weather.status == 'ok' %}
+    <ul>
+      <li>Temperatura: {{ weather.data.temp_min }}° / {{ weather.data.temp_max }}° C</li>
+      <li>Probabilità di pioggia: {{ weather.data.rain_probability }}%</li>
+      <li>Vento massimo: {{ weather.data.wind_max }} km/h</li>
+    </ul>
+  {% elif weather.status == 'too_far' %}
+    <p>Previsioni non ancora disponibili.</p>
+  {% elif weather.status == 'past' %}
+    <p>Previsioni non disponibili per date passate.</p>
+  {% else %}
+    <p>Meteo non disponibile al momento.</p>
+  {% endif %}
+</section>
+
 {% if current_user.is_authenticated and current_user.id == outing.organizer_id %}
   <p>
     <a href="{{ url_for('outings.edit', outing_id=outing.id) }}" role="button" class="secondary">Modifica</a>
