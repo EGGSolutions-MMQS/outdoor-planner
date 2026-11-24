@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="outdoor-planner-sample" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Sentiero di prova (inventato)</name>
+    <trkseg>
+      <trkpt lat="45.7" lon="9.67"><ele>250</ele></trkpt>
+      <trkpt lat="45.704" lon="9.673"><ele>280</ele></trkpt>
+      <trkpt lat="45.7085" lon="9.678"><ele>330</ele></trkpt>
+      <trkpt lat="45.712" lon="9.686"><ele>390</ele></trkpt>
+      <trkpt lat="45.715" lon="9.695"><ele>450</ele></trkpt>
+      <trkpt lat="45.7185" lon="9.701"><ele>520</ele></trkpt>
+      <trkpt lat="45.721" lon="9.709"><ele>560</ele></trkpt>
+      <trkpt lat="45.725" lon="9.715"><ele>610</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

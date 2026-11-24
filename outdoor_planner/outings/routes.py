@@ -4,10 +4,12 @@ from functools import wraps
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -15,7 +17,7 @@ from flask_login import current_user, login_required
 
 from ..extensions import db
 from ..models import Outing
-from ..services import geocoding
+from ..services import geocoding, gpx
 from ..services import weather as weather_service
 from .forms import OutingForm
 
@@ -86,6 +88,35 @@ def _check_dates_and_seats(form, outing):
     return not (form.starts_at.errors or form.max_seats.errors)
 
 
+def _read_gpx_upload(form):
+    """Return (stats, data, original_name) for an uploaded file, or None; sets form error."""
+    upload = form.gpx.data
+    if not upload or not getattr(upload, "filename", ""):
+        return None
+    data = upload.read()
+    try:
+        stats = gpx.parse_gpx(data)
+    except gpx.GpxError as exc:
+        form.gpx.errors.append(str(exc))
+        return False
+    return stats, data, gpx.clean_original_name(upload.filename)
+
+
+def _apply_gpx(outing, upload, remove):
+    folder = current_app.config["UPLOAD_FOLDER"]
+    if upload:
+        stats, data, original_name = upload
+        gpx.delete_gpx(folder, outing.gpx_filename)
+        outing.gpx_filename = gpx.save_gpx(data, folder)
+        outing.gpx_original_name = original_name
+        outing.gpx_distance_km = stats.distance_km
+        outing.gpx_points = stats.points
+    elif remove and outing.gpx_filename:
+        gpx.delete_gpx(folder, outing.gpx_filename)
+        outing.gpx_filename = outing.gpx_original_name = None
+        outing.gpx_distance_km = outing.gpx_points = None
+
+
 def _handle_form(outing=None):
     if request.method == "GET":
         session.pop(GEO_SESSION_KEY, None)
@@ -109,6 +140,10 @@ def _handle_form(outing=None):
         if place is None:
             flash("Cerca e scegli un luogo.", "error")
         elif _check_dates_and_seats(form, outing):
+            form.gpx.errors = list(form.gpx.errors)
+            upload = _read_gpx_upload(form)
+            if upload is False:
+                return render_template("outings/form.html", form=form, outing=outing)
             if outing is None:
                 outing = Outing(organizer_id=current_user.id)
                 db.session.add(outing)
@@ -117,6 +152,7 @@ def _handle_form(outing=None):
             outing.location_name, outing.latitude, outing.longitude = place
             outing.starts_at = form.starts_at.data
             outing.max_seats = form.max_seats.data
+            _apply_gpx(outing, upload, form.remove_gpx.data)
             db.session.commit()
             session.pop(GEO_SESSION_KEY, None)
             flash("Uscita salvata.", "success")
@@ -147,7 +183,21 @@ def edit(outing_id):
 @organizer_required
 def delete(outing_id):
     outing = get_own_outing_or_403(outing_id)
+    gpx.delete_gpx(current_app.config["UPLOAD_FOLDER"], outing.gpx_filename)
     db.session.delete(outing)
     db.session.commit()
     flash("Uscita cancellata.", "success")
     return redirect(url_for("main.index"))
+
+
+@bp.route("/<int:outing_id>/gpx")
+def download_gpx(outing_id):
+    outing = db.get_or_404(Outing, outing_id)
+    if not outing.gpx_filename:
+        abort(404)
+    return send_from_directory(
+        current_app.config["UPLOAD_FOLDER"],
+        outing.gpx_filename,
+        as_attachment=True,
+        download_name=outing.gpx_original_name or "traccia.gpx",
+    )

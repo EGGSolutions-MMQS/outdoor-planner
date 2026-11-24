@@ -10,6 +10,14 @@
 <p class="description">{{ outing.description }}</p>
 <p>Posti: {{ outing.signups|length }} / {{ outing.max_seats }}</p>
 
+{% if outing.gpx_filename %}
+<section>
+  <h2>Traccia GPX</h2>
+  <p>Distanza: {{ '%.2f'|format(outing.gpx_distance_km) }} km · Punti: {{ outing.gpx_points }}
+    · <a href="{{ url_for('outings.download_gpx', outing_id=outing.id) }}">Scarica traccia</a></p>
+</section>
+{% endif %}
+
 <section>
   <h2>Previsioni meteo</h2>
   {% if weather.status == 'ok' %}

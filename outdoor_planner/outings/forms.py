@@ -1,5 +1,7 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import (
+    BooleanField,
     DateTimeLocalField,
     IntegerField,
     SelectField,
@@ -22,4 +24,9 @@ class OutingForm(FlaskForm):
         "Data e ora", format="%Y-%m-%dT%H:%M", validators=[DataRequired()]
     )
     max_seats = IntegerField("Posti massimi", validators=[DataRequired(), NumberRange(1, 500)])
+    gpx = FileField(
+        "Traccia GPX (opzionale, max 2 MB)",
+        validators=[Optional(), FileAllowed(["gpx"], "Solo file .gpx")],
+    )
+    remove_gpx = BooleanField("Rimuovi la traccia attuale")
     save = SubmitField("Salva")
