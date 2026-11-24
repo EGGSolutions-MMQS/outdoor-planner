@@ -1,0 +1,5 @@
+form.inline { display: inline; margin: 0; }
+form.inline button { margin: 0; padding: 0.25rem 0.75rem; width: auto; }
+.flash.error { border-left: 4px solid #c0392b; }
+.flash.success { border-left: 4px solid #27ae60; }
+.meta { color: var(--pico-muted-color); }
