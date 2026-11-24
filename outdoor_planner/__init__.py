@@ -33,6 +33,10 @@ def create_app(config=None):
     with app.app_context():
         db.create_all()
 
+    from .seed import seed_command
+
+    app.cli.add_command(seed_command)
+
     register_error_handlers(app)
     return app
 
